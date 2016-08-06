@@ -240,9 +240,14 @@ function! s:GitBranchInfoFindDir()
 	let l:prefix	= l:bufname =~ "^/" ? "/" : ""
 	let b:gbi_git_dir	= ""
 	while len(l:buflist) > 0
-		let l:path = l:prefix.join(l:buflist,"/").l:prefix.".git"
+		let l:pre_path = l:prefix.join(l:buflist,"/").l:prefix
+		let l:path = l:pre_path . ".git"
 		if !empty(finddir(l:path))
 			let b:gbi_git_dir = l:path
+			break
+		elseif filereadable(l:path)
+			let b:gbi_git_dir = l:pre_path . split(readfile(l:path, "", 1)[0], "gitdir: ")[0]
+            echo b:gbi_git_dir
 			break
 		endif
 		call remove(l:buflist,-1)
