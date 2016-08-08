@@ -20,9 +20,6 @@ if exists("g:git_branch_check_write")
     autocmd BufWriteCmd * call s:GitBranchInfoWriteCheck()
 endif
 
-" *****************************************************************************
-" public functions
-" *****************************************************************************
 function! GitBranchInfoString()
     let l:tokens = GitBranchInfoTokens()
     if len(l:tokens) == 1 " no git here
@@ -88,9 +85,6 @@ function! GitBranchInfoTokens()
     return [s:current, l:heads, l:remotes]
 endfunction
 
-" *****************************************************************************
-" functions called from menu
-" *****************************************************************************
 function! <SID>GitBranchInfoCheckout(branch)
     let l:tokens = GitBranchInfoTokens()
     let l:checkout = "git\ checkout\ " . a:branch
@@ -108,9 +102,6 @@ function! <SID>GitBranchInfoFetch(remote)
     exe l:cmd
 endfunction
 
-" *****************************************************************************
-" local script functions
-" *****************************************************************************
 function! s:GitBranchInfoCheckGitDir()
     return exists("b:gbi_git_dir") && !empty(b:gbi_git_dir)
 endfunction
