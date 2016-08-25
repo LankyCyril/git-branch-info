@@ -167,9 +167,12 @@ function! s:GitBranchInfoWriteCheck()
     endif
     " ask what we will do
     echohl ErrorMsg
-    let l:answer = tolower(input("Loaded from \'" . b:gbi_git_load_branch . "\' branch but saving on \'" . l:current . "\' branch, confirm [y/n]? ", "n"))
+    let l:answer = input("Loaded from \'" . b:gbi_git_load_branch .
+      \ "\' branch but saving on \'" . l:current . "\' branch, " .
+      \ "confirm [y/n]? ", "n")
     echohl None
-    let l:msg = "File " . (l:answer == "y" ? "" : "NOT ") . "saved on branch \'" . l:current . "\'."
+    let l:save_state = (tolower(l:answer) == "y" ? "saved" : "NOT saved")
+    let l:msg = "File " . l:save_state . " on branch \'" . l:current . "\'."
     " ok, save even with different branches
     if l:answer == "y"
         exec l:writecmd expand("<afile>")
@@ -199,7 +202,8 @@ function! s:GitBranchInfoFindDir()
             let b:gbi_git_dir = l:path
             break
         elseif filereadable(l:path)
-            let b:gbi_git_dir = l:pre_path . split(readfile(l:path, "", 1)[0], "gitdir: ")[0]
+            let b:gbi_git_dir = l:pre_path .
+              \ split(readfile(l:path, "", 1)[0], "gitdir: ")[0]
             break
         endif
         call remove(l:buflist, -1)
@@ -227,8 +231,16 @@ function! s:GitBranchInfoShowMenu(current, heads, remotes)
     let l:remotes = len(a:remotes) > 0 ? a:remotes : []
     let l:locals = sort(extend(l:current, l:heads))
     for l:branch in l:locals
-        let l:moption = (l:branch == l:compare ? "Working\\ \\on\\ " : "Checkout\\ ") . l:branch
-        let l:mcom = (l:branch == l:compare ? ":echo 'Already\ on\ branch\ \''" . l:branch . "\''.'<CR>" : "call <SID>GitBranchInfoCheckout('" . l:branch . "')<CR><CR>")
+        if l:branch == l:compare
+            let l:state = "Working\\ \\on\\ "
+            let l:mcom = ":echo 'Already\ on\ branch\ \''" .
+              \ l:branch . "\''.'<CR>"
+        else
+            let l:state = "Checkout\\ "
+            let l:mcom = "call <SID>GitBranchInfoCheckout('" .
+              \ l:branch . "')<CR><CR>"
+        endif
+        let l:moption = l:state . l:branch
         exe ":menu <silent> Plugin.Git\\ Info." . l:moption . " :" . l:mcom
     endfor
     exe ":menu <silent> Plugin.Git\\ Info.-Local- :"
@@ -239,7 +251,8 @@ function! s:GitBranchInfoShowMenu(current, heads, remotes)
             continue
         endif
         let l:lastone = l:tokens[0]
-        exe "menu <silent> Plugin.Git\\ Info.Fetch\\ " . l:tokens[0] . " :call <SID>GitBranchInfoFetch('" . l:tokens[0] . "')<CR><CR>"
+        exe "menu <silent> Plugin.Git\\ Info.Fetch\\ " . l:tokens[0] .
+          \ " :call <SID>GitBranchInfoFetch('" . l:tokens[0] . "')<CR><CR>"
     endfor
 endfunction
 
