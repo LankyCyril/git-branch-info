@@ -29,12 +29,28 @@ function! GitBranchInfoString()
     let s:current = l:tokens[0]  " the current branch is the first one
     let l:branches = l:tokens[1] " the other branches are the last one
     let l:remotes = l:tokens[2]  " remote branches
-    let l:around = exists("g:git_branch_status_around") ? (strlen(g:git_branch_status_around) == 2 ? split(g:git_branch_status_around, '\zs') : ["",""]) : ["[","]"]
-    let l:text = exists("g:git_branch_status_text") ? g:git_branch_status_text : " Git "
+    if exists("g:git_branch_status_around")
+        if strlen(g:git_branch_status_around) == 2
+            let l:around = split(g:git_branch_status_around, '\zs')
+        else
+            let l:around = ["", ""]
+        endif
+    else
+        let l:around = ["[", "]"]
+    endif
+    if exists("g:git_branch_status_text")
+        let l:text = g:git_branch_status_text
+    else
+        let l:text = " Git "
+    endif
     if s:menu_on == 0
         call s:GitBranchInfoShowMenu(l:tokens[0], l:tokens[1], l:tokens[2])
     endif
-    return l:text . l:around[0] . s:current . l:around[1] . (exists("g:git_branch_status_head_current") ? "" : l:around[0].join(l:branches, ",") . l:around[1])
+    if exists("g:git_branch_status_head_current")
+        let l:tail = ""
+    else
+        let l:tail = l:around[0] . join(l:branches, ",") . l:around[1]
+    return l:text . l:around[0] . s:current . l:around[1] . l:tail
 endfunction
 
 function! GitBranchInfoLoadBranch()
@@ -44,7 +60,11 @@ endfunction
 function! GitBranchInfoTokens()
     if !s:GitBranchInfoCheckGitDir()
         let s:current = ''
-        return [exists("g:git_branch_status_nogit") ? g:git_branch_status_nogit : "No git."]
+        if exists("g:git_branch_status_nogit")
+            return g:git_branch_status_nogit
+        else
+            return "No git."
+        endif
     endif
     if !s:GitBranchInfoCheckReadable()
         let s:current = ''
@@ -63,16 +83,18 @@ function! GitBranchInfoTokens()
             let l:heads = []
         else
             let l:heads = split(glob(b:gbi_git_dir . "/refs/heads/*"), "\n")
-            call map(l:heads, 'substitute(v:val, b:gbi_git_dir . "/refs/heads/", "", "")')
+            let l:mp = 'substitute(v:val, b:gbi_git_dir . "/refs/heads/", "", "")'
+            call map(l:heads, l:mp)
             call sort(filter(l:heads, 'v:val !~ s:current'))
         endif
         if exists("g:git_branch_status_ignore_remotes")
             let l:remotes = []
         else
             let l:remotes = split(glob(b:gbi_git_dir . "/refs/remotes/*/**"), "\n")
-            call sort(map(l:remotes, 'substitute(v:val, b:gbi_git_dir . "/refs/remotes/", "", "")'))
+            let l:mp = 'substitute(v:val, b:gbi_git_dir . "/refs/remotes/", "", "")'
+            call sort(map(l:remotes, l:mp))
         endif
-        let l:checking = s:current.join(l:heads).join(l:remotes)
+        let l:checking = s:current . join(l:heads) . join(l:remotes)
         if l:checking != s:checking && has("gui")
             call s:GitBranchInfoRenewMenu(s:current, l:heads, l:remotes)
         endif
@@ -89,7 +111,11 @@ function! <SID>GitBranchInfoCheckout(branch)
     let l:tokens = GitBranchInfoTokens()
     let l:checkout = "git\ checkout\ " . a:branch
     let l:where = substitute(b:gbi_git_dir, ".git$", "", "")
-    let l:cmd = strlen(l:where) > 0 ? "!cd\ " . l:where . ";\ " . l:checkout : "!" . l:checkout
+    if strlen(l:where) > 0
+        let l:cmd = "!cd\ " . l:where . ";\ " . l:checkout
+    else
+        let l:cmd = "!" . l:checkout
+    endif
     exe l:cmd
     call s:GitBranchInfoRenewMenu(l:tokens[0], l:tokens[1], l:tokens[2])
 endfunction
@@ -98,7 +124,11 @@ function! <SID>GitBranchInfoFetch(remote)
     let l:tokens = GitBranchInfoTokens()
     let l:fetch = "git\ fetch\ " . a:remote
     let l:where = substitute(b:gbi_git_dir, ".git$", "", "")
-    let l:cmd = strlen(l:where) > 0 ? "!cd\ " . l:where . ";\ " . l:fetch : "!" . l:fetch
+    if strlen(l:where) > 0
+        let l:cmd = "!cd\ " . l:where . ";\ " . l:fetch
+    else
+        let l:cmd = "!" . l:fetch
+    endif
     exe l:cmd
 endfunction
 
@@ -111,7 +141,7 @@ function! s:GitBranchInfoCheckReadable()
 endfunction
 
 function! s:GitBranchInfoWriteCheck()
-    let l:writecmd = v:cmdbang==1 ? "write!" : "write"
+    let l:writecmd = v:cmdbang == 1 ? "write!" : "write"
     " not controlled by Git, write this thing!
     if !s:GitBranchInfoCheckGitDir()
         exec l:writecmd expand("<afile>")
@@ -121,7 +151,8 @@ function! s:GitBranchInfoWriteCheck()
     let l:buftype = getbufvar(bufnr("%"), '&buftype')
     if strlen(l:buftype) > 0
         echohl WarningMsg
-        echo "Not writing if it's not a normal buffer (found a " . l:buftype . " buffer)."
+        let l:msg = "Not writing if it's not a normal buffer"
+        echo l:msg . " (found a " . l:buftype . " buffer)."
         echohl None
         return 0
     endif
