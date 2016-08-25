@@ -76,8 +76,6 @@ function! GitBranchInfoTokens()
             let s:current = s:rebase_msg
             return [s:current, [], []]
         endif
-        " TA:  2009/07/04 -- Allow for branches with slashes in their name, a
-        " la 'auth/current-branch', by only removing the refs/head/ prefix.
         let s:current = substitute(l:contents, "^.*refs\/heads\/", "", "")
         if exists("g:git_branch_status_head_current")
             let l:heads = []
